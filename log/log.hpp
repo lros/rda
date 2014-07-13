@@ -70,6 +70,7 @@ enum {
 void setLogLevel(int level);
 void flush();    // TODO remove this
 void debug(const char *message);    // TODO remove this
+void terminate();
 
 }  // end namespace log
 }  // end namespace rda
