@@ -5,14 +5,12 @@
 all:
 
 TESTS += atom-test
+TESTS += xml-test
 
 $(TESTS): ../librda.a
 
-#t1_init: t1_init.cpp ../libVgoFramework.a
-#t2_props: t2_props.cpp ../libVgoFramework.a
-#t3_connections: t3_connections.cpp ../libVgoFramework.a
-
 atom-test: atom-test.o
+#xmltest: xmltest.o
 
 # Location of rda include files
 CPPFLAGS += -I..

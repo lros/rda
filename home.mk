@@ -7,8 +7,9 @@ all: librda.a
 #LDFLAGS += -L/usr/local/lib
 
 atom.o: atom.hpp
+rdaxml.o: rdaxml.hpp
 
-librda.a: atom.o
+librda.a: atom.o rdaxml.o
 	ar rs $@ $^
 
 clean:

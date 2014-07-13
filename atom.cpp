@@ -5,6 +5,7 @@
 #include <map>
 #include <vector>
 #include <stdexcept>
+#include <string.h>
 
 using namespace std;
 
