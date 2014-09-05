@@ -1,6 +1,9 @@
 # Include this makefile as follows:
 #   RDA_TOP =? $(shell rdainfo.py --top)
 #   include $(RDA_TOP)/build.mk
+# or
+#   RDA_TOP =? ../..
+#   include $(RDA_TOP)/build.mk
 
 # First make sure 'all' is the default target.
 all:

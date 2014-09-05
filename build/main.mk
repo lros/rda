@@ -32,13 +32,17 @@ MODULE ?= $(notdir $(CURDIR))
 # The directory for intermediate files.
 _OBJDIR := obj-$(TARGET)-$(CONFIG)
 
+# Subdirectory where libraries are placed during build.
+# Executables are put there, too.
+_LIBSUBDIR := $(_LIBDIR)/$(TARGET)-$(CONFIG)
+
 _STATIC_LIB_NAME_OF ?= lib$(1).a
-RDA_LIB_STATIC := $(_OBJDIR)/$(call _STATIC_LIB_NAME_OF,$(MODULE))
+RDA_LIB_STATIC := $(_LIBSUBDIR)/$(call _STATIC_LIB_NAME_OF,$(MODULE))
 
 _DYNAMIC_LIB_NAME_OF ?= lib$(1).so
-RDA_LIB_DYNAMIC := $(_OBJDIR)/$(call _DYNAMIC_LIB_NAME_OF,$(MODULE))
+RDA_LIB_DYNAMIC := $(_LIBSUBDIR)/$(call _DYNAMIC_LIB_NAME_OF,$(MODULE))
 
-RDA_EXEC ?= $(_OBJDIR)/$(MODULE)
+RDA_EXEC ?= $(_LIBSUBDIR)/$(MODULE)
 
 # Process some additions to the flags governing compilation.
 DEFINES += RDA_TARGET=$(TARGET)
@@ -46,9 +50,10 @@ DEFINES += RDA_CONFIG=$(CONFIG)
 DEFINES += RDA_MODULE=$(MODULE)
 CPPFLAGS += $(addprefix -I,$(INCLUDES))
 CPPFLAGS += $(addprefix -D,$(DEFINES))
+LDFLAGS += -L$(_LIBSUBDIR)
 
 # List of all the .o files
-_OBJECTS := $(addprefix $(_OBJDIR)/,$(notdir $(basename $(SOURCES))))
+_OBJECTS = $(patsubst %,$(_OBJDIR)/%.o,$(notdir $(basename $(SOURCES))))
 
 # Modify Make's built-in pattern rules to use _OBJDIR.
 .SUFFIXES:
@@ -70,20 +75,48 @@ $(_OBJDIR)/%.o: %.mm $(_OBJDIR)/.witness
 
 # Link an executable
 $(RDA_EXEC): $(_OBJECTS)
+	$(LINK.cc) $^ $(LDLIBS) -o $@
+
+# Effectively replace Make's built-in archaic default of 'rv'.
+ifeq ($(origin ARFLAGS),default)
+ARFLAGS = rs
+endif
+
+# Mostly patterned after Make's built-ins.
+ifndef STATICLIB.recipe
+STATICLIB.recipe = $(AR) $(ARFLAGS) $@ $^
+endif
 
 # Link a static library
 $(RDA_LIB_STATIC): $(_OBJECTS)
+	$(STATICLIB.recipe)
+
+# Mostly patterned after Make's built-ins.
+ifndef DYNAMICLIB.recipe
+DYNAMICLIB.recipe = $(LD) -shared $(LDFLAGS) $(LDLIBS) -o $@ $^
+endif
 
 # Link a dynamic library
 $(RDA_LIB_DYNAMIC): $(_OBJECTS)
+	$(DYNAMICLIB.recipe)
 
 $(_OBJDIR)/.witness:
-	@mkdir -p $(_OBJDIR) && touch $@
+	mkdir -p $(_OBJDIR) && touch $@
 
-all:
+$(_LIBSUBDIR)/.witness:
+	mkdir -p $(_LIBSUBDIR) && touch $@
+
+all: $(_LIBSUBDIR)/.witness
+
+clean:
+	$(RM) -r $(_OBJDIR)
+	$(RM) $(RDA_LIB_STATIC) $(RDA_LIB_DYNAMIC) $(RDA_EXEC)
+
+print:
 	@echo RDA_TOP is $(RDA_TOP)
 	@echo _HOST is $(_HOST)
 	@echo TARGET is $(TARGET)
 	@echo CONFIG is $(CONFIG)
 	@echo MODULE is $(MODULE)
+	@echo _OBJECTS is $(_OBJECTS)
 
