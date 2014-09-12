@@ -55,6 +55,18 @@ LDFLAGS += -L$(_LIBSUBDIR)
 # List of all the .o files
 _OBJECTS = $(patsubst %,$(_OBJDIR)/%.o,$(notdir $(basename $(SOURCES))))
 
+# List of .d (dependency) files
+_DFILES = $(_OBJECTS:.o=.d)
+
+# Tell gcc to generate .d files while compiling
+CPPFLAGS += -MD
+
+# Never try to remake a .d file
+$(_DFILES):
+
+# Include the .d files but don't complain if any are missing
+-include $(_DFILES)
+
 # Modify Make's built-in pattern rules to use _OBJDIR.
 .SUFFIXES:
 # Compile C
