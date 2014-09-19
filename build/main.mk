@@ -54,9 +54,10 @@ LDFLAGS += -L$(_LIBSUBDIR)
 
 # List of all the .o files
 _OBJECTS = $(patsubst %,$(_OBJDIR)/%.o,$(notdir $(basename $(SOURCES))))
+_TEST_OBJECTS = $(patsubst %,$(_OBJDIR)/%.o,$(notdir $(basename $(TESTS))))
 
 # List of .d (dependency) files
-_DFILES = $(_OBJECTS:.o=.d)
+_DFILES = $(_OBJECTS:.o=.d) $(_TEST_OBJECTS:.o=.d)
 
 # Tell gcc to generate .d files while compiling
 CPPFLAGS += -MD
@@ -112,6 +113,15 @@ endif
 $(RDA_LIB_DYNAMIC): $(_OBJECTS)
 	$(DYNAMICLIB.recipe)
 
+# List of test programs
+_TEST_EXECS = $(addsuffix -$(TARGET)-$(CONFIG),$(notdir $(basename $(TESTS))))
+
+# Link a test program
+%-$(TARGET)-$(CONFIG): $(_OBJDIR)/%.o $(_OBJECTS)
+	$(LINK.cc) $^ $(LDLIBS) -o $@
+
+all: $(_TEST_EXECS)
+
 $(_OBJDIR)/.witness:
 	mkdir -p $(_OBJDIR) && touch $@
 
@@ -121,8 +131,9 @@ $(_LIBSUBDIR)/.witness:
 all: $(_LIBSUBDIR)/.witness
 
 clean:
-	$(RM) -r $(_OBJDIR)
-	$(RM) $(RDA_LIB_STATIC) $(RDA_LIB_DYNAMIC) $(RDA_EXEC)
+	$(RM) -r $(_OBJDIR) \
+            $(RDA_LIB_STATIC) $(RDA_LIB_DYNAMIC) $(RDA_EXEC) \
+            $(_TEST_EXECS)
 
 print:
 	@echo RDA_TOP is $(RDA_TOP)
