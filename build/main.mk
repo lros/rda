@@ -36,6 +36,7 @@ _SUBDIR_PHONIES := $(addsuffix /.phony-target,$(SUBDIRS))
 #.PHONY: $(_SUBDIR_PHONIES)
 
 all: $(_SUBDIR_PHONIES)
+clean: $(_SUBDIR_PHONIES)
 
 # The directory for intermediate files.
 _OBJDIR := obj-$(TARGET)-$(CONFIG)
@@ -134,7 +135,7 @@ all: $(_TEST_EXECS)
 # '*/.phony-target' ought to be PHONY but that doesn't
 # work.  Hope nobody creates a file with that name.
 %/.phony-target:
-	$(MAKE) -C $(dir $@)
+	$(MAKE) -C $(dir $@) $(MAKECMDGOALS)
 
 $(_OBJDIR)/.witness:
 	mkdir -p $(_OBJDIR) && touch $@
