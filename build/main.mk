@@ -29,6 +29,14 @@ include $(RDA_TOP)/build/config_$(CONFIG).mk
 
 MODULE ?= $(notdir $(CURDIR))
 
+# Recur into subdirectories with these phony targets
+_SUBDIR_PHONIES := $(addsuffix /.phony-target,$(SUBDIRS))
+
+# This doesn't work, dang it.
+#.PHONY: $(_SUBDIR_PHONIES)
+
+all: $(_SUBDIR_PHONIES)
+
 # The directory for intermediate files.
 _OBJDIR := obj-$(TARGET)-$(CONFIG)
 
@@ -122,6 +130,12 @@ _TEST_EXECS = $(addsuffix -$(TARGET)-$(CONFIG),$(notdir $(basename $(TESTS))))
 
 all: $(_TEST_EXECS)
 
+# Recur into subdirectories;
+# '*/.phony-target' ought to be PHONY but that doesn't
+# work.  Hope nobody creates a file with that name.
+%/.phony-target:
+	$(MAKE) -C $(dir $@)
+
 $(_OBJDIR)/.witness:
 	mkdir -p $(_OBJDIR) && touch $@
 
@@ -142,4 +156,5 @@ print:
 	@echo CONFIG is $(CONFIG)
 	@echo MODULE is $(MODULE)
 	@echo _OBJECTS is $(_OBJECTS)
+	@echo _SUBDIR_PHONIES is $(_SUBDIR_PHONIES)
 
