@@ -3,7 +3,7 @@
 # Test program for simpleReadline module.
 
 import sys
-import simplereadline as sr
+import simpleReadline as sr
 
 getch = None
 oldtermios = None
