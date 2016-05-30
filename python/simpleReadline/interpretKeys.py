@@ -1,7 +1,8 @@
-#!/usr/bin/env python3
-
 # Simplified version of Python readline module that does not require the
 # GNU readline package (which is available only on Linux).
+
+# This file implements interpretation of the bytes sent by various terminal
+# emulators (Windows console, Linux terminal, etc.).
 
 # This Python module implements two key features:
 # 1.  Tab completion
@@ -11,19 +12,7 @@
 # This uses module-as-singleton: it is not possible to maintain multiple
 # separate readline states simultaneously.
 
-import sys
-import rlcompleter
-
 import simpleReadline as sr
-
-# Configuration state
-_writeFn = None   # Function to write text
-_context = None   # Dictionary of local identifiers
-
-def configure(writeFn=None, context=None):
-    global _writeFn, _context
-    _writeFn = _defaultWriteFn if writeFn is None else writeFn
-    _context = context
 
 # Runtime state
 _history = list()   # list of strings, [0] is oldest
@@ -89,11 +78,6 @@ def addByte(bite):
         _escState = kWESC
     else:
         sr.history._insert(bite)
-        # TODO handle history
-        if _lineBuf is None:
-            _lineBuf = bytearray()
-        _lineBuf.append(bite)
-        _writeFn(_lineBuf[-1:])
     return None
 
 def _handleEsc(bite):
@@ -157,10 +141,4 @@ def _handleEsc(bite):
         _escState = None
     else:
         raise RuntimeError("_escState broken: {}".format(_escState))
-
-def _defaultWriteFn(bites):
-    # This will fail if stdout is not a normal tty console
-    sys.stdout.buffer.raw.write(bites)
-
-_writeFn = _defaultWriteFn
 
