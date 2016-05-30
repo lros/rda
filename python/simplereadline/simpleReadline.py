@@ -34,16 +34,29 @@ _lineBuf = None     # bytearray of current line
 # If 1, then _lineno is not None; if 2, then _lineBuf is not None.
 
 # Some ASCII codes
-kBEL = 7
-kBS = 8
-kHT = 9
-kLF = 10
-kCR = 13
+kBEL = ord('\a')
+kBS = ord('\b')
+kHT = ord('\t')
+kLF = ord('\n')
+kCR = ord('\r')
 kESC = 27
-kCSI = 91  # '[', introduces multi character escape sequences
-kSS2 = 78  # 'N', alternate character set (more commonly received codes)
-kSS3 = 79  # 'O', alternate character set (more commonly received codes)
+kCSI = ord('[')  # introduces multi character escape sequences
+kSS2 = ord('N')  # alternate character set (more commonly received codes)
+kSS3 = ord('O')  # alternate character set (more commonly received codes)
 kDEL = 127
+kUP = ord('A')
+kLEFT = ord('D')
+kRIGHT = ord('C')
+kDOWN = ord('B')
+kDELKEY = ord('~')
+
+# Windows console, determined by experimentation.  I made up the names.
+kWESC = 224  # Used like ESC on Windows
+kWUP = 72
+kWLEFT = 75
+kWRIGHT = 77
+kWDOWN = 80
+kWDEL = 83
 
 # Some output sequences as bytes
 kBeep = b'\a'
@@ -61,6 +74,7 @@ _escState = None
 # Returns None or a full line of text (as a string).
 def addByte(bite):
     global _escState
+    #print('addByte():', bite, end='\r\n')
     #print('_escState is', _escState, end='\r\n')
     if _escState is not None:
         return _handleEsc(bite)
@@ -68,9 +82,13 @@ def addByte(bite):
     if bite == kCR or bite == kLF:
         return _return()
     elif bite == kDEL or bite == kBS:
-        return _delleft()
+        return _delLeft()
+    elif bite == kHT:
+        return _expand()
     elif bite == kESC:
         _escState = True
+    elif bite == kWESC:
+        _escState = kWESC
     else:
         # TODO handle history
         if _lineBuf is None:
@@ -92,18 +110,18 @@ def _return():
     return result
 
 def _left():
-    pass
+    print("left", end='\r\n')
 
 def _right():
-    pass
+    print("right", end='\r\n')
 
 def _up():
-    pass
+    print("up", end='\r\n')
 
 def _down():
-    pass
+    print("down", end='\r\n')
 
-def _delleft():
+def _delLeft():
     global _lineBuf
     if _lineBuf:
         del _lineBuf[-1]
@@ -111,17 +129,14 @@ def _delleft():
     else:
         _writeFn(kBeep)
 
-def _delright():
-    pass
+def _delRight():
+    print("delRight", end='\r\n')
 
 def _insert(bite):
-    pass
+    print("insert", bite, end='\r\n')
 
-def _expandNext():
-    pass
-
-def _expandPrev():
-    pass
+def _expand():
+    print("expand", end='\r\n')
 
 def _handleEsc(bite):
     global _escState
@@ -139,13 +154,38 @@ def _handleEsc(bite):
         else:
             print('bad escape sequence:', kESC, bite, end='\r\n')
             _escState = None
+    elif _escState is kWESC:
+        if bite == kWUP:
+            _up()
+        elif bite == kWDOWN:
+            _down()
+        elif bite == kWLEFT:
+            _left()
+        elif bite == kWRIGHT:
+            _right()
+        elif bite == kWDEL:
+            _delRight()
+        else:
+            print('Bad or unused Windows ESC-', bite, end='\r\n')
+        _escState = None
     elif isinstance(_escState, bytearray):
         #print('within a CSI', end='\r\n')
         if 48 <= bite <= 63:
             _escState.append(bite)
         elif 64 <= bite <= 126:  # end of CSI sequence
-            # TODO deal with sequence
-            print('ESC-', _escState, chr(bite), end='\r\n')
+            if bite == kUP:
+                _up()
+            elif bite == kDOWN:
+                _down()
+            elif bite == kLEFT:
+                _left()
+            elif bite == kRIGHT:
+                _right()
+            elif bite == kDELKEY and _escState == b'3':
+                _delRight()
+            else:
+                print('unused or unknown ESC-',
+                        _escState, chr(bite), end='\r\n')
             _escState = None
         else:
             print('bad escape sequence:', _escState, bite, end='\r\n')
