@@ -4,25 +4,7 @@
 # This file implements interpretation of the bytes sent by various terminal
 # emulators (Windows console, Linux terminal, etc.).
 
-# This Python module implements two key features:
-# 1.  Tab completion
-# 2.  History
-# The history is optionally persistent in a file.
-# Tab completion optionally includes identifiers from an execution context.
-# This uses module-as-singleton: it is not possible to maintain multiple
-# separate readline states simultaneously.
-
 import simpleReadline as sr
-
-# Runtime state
-_history = list()   # list of strings, [0] is oldest
-_lineno = None      # index of current line in _history
-_lineBuf = None     # bytearray of current line
-# At any given moment, we are either
-# 1. looking at an unmodified line in the history list, or
-# 2. editing a line, or
-# 3. at the end of the history with a blank line.
-# If 1, then _lineno is not None; if 2, then _lineBuf is not None.
 
 # Some ASCII codes
 kBEL = ord('\a')
@@ -65,19 +47,19 @@ def addByte(bite):
     #print('_escState is', _escState, end='\r\n')
     if _escState is not None:
         return _handleEsc(bite)
-    global _history, _lineno, _lineBuf, _writeFn
+    global _writeFn
     if bite == kCR or bite == kLF:
-        return sr.history._return()
+        return sr.history.enter()
     elif bite == kDEL or bite == kBS:
-        return sr.history._delLeft()
+        return sr.history.delLeft()
     elif bite == kHT:
-        return sr.history._expand()
+        return sr.history.expand()
     elif bite == kESC:
         _escState = True
     elif bite == kWESC:
         _escState = kWESC
     else:
-        sr.history._insert(bite)
+        sr.history.insert(bite)
     return None
 
 def _handleEsc(bite):
@@ -98,15 +80,15 @@ def _handleEsc(bite):
             _escState = None
     elif _escState is kWESC:
         if bite == kWUP:
-            sr.history._up()
+            sr.history.up()
         elif bite == kWDOWN:
-            sr.history._down()
+            sr.history.down()
         elif bite == kWLEFT:
-            sr.history._left()
+            sr.history.left()
         elif bite == kWRIGHT:
-            sr.history._right()
+            sr.history.right()
         elif bite == kWDEL:
-            sr.history._delRight()
+            sr.history.delRight()
         else:
             print('Bad or unused Windows ESC-', bite, end='\r\n')
         _escState = None
@@ -116,15 +98,15 @@ def _handleEsc(bite):
             _escState.append(bite)
         elif 64 <= bite <= 126:  # end of CSI sequence
             if bite == kUP:
-                sr.history._up()
+                sr.history.up()
             elif bite == kDOWN:
-                sr.history._down()
+                sr.history.down()
             elif bite == kLEFT:
-                sr.history._left()
+                sr.history.left()
             elif bite == kRIGHT:
-                sr.history._right()
+                sr.history.right()
             elif bite == kDELKEY and _escState == b'3':
-                sr.history._delRight()
+                sr.history.delRight()
             else:
                 print('unused or unknown ESC-',
                         _escState, chr(bite), end='\r\n')
